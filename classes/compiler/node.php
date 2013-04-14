@@ -77,6 +77,7 @@ class Compiler_Node
 			if ($errors)
 			{
 				$json = json_decode(trim($errors));
+				
 				if (isset($json->message, $json->filename, $json->line))
 				{
 					throw new \ErrorException($json->message, 0, E_ERROR, $json->filename, $json->line);
@@ -88,6 +89,9 @@ class Compiler_Node
 			}
 
 			$destination = pathinfo($destination);
+			
+			self::create_dir($destination['dirname']);
+			
 			\File::update($destination['dirname'], $destination['basename'], $raw_css);
 
 		}
@@ -95,5 +99,22 @@ class Compiler_Node
 		{
 			throw new \Exception('Could not open nodejs instance!');
 		}
+	}
+	
+	private static function create_dir($dirname)
+	{
+		$basepath = explode('/', $dirname);
+		$dirname = end($basepath);
+		
+		array_splice($basepath, -1);
+
+		try {			
+			\File::create_dir(implode('/', $basepath), $dirname);
+		}
+		catch(\FileAccessException $e) {
+			self::create_dir(implode('/', $basepath));
+			self::create_dir(implode('/', $basepath) . '/' . $dirname);
+		}
+		catch(\Exception $e) {}
 	}
 }
